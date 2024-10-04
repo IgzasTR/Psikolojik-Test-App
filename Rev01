@@ -1,0 +1,219 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+
+class App1:
+    def __init__(self, master):
+        self.master = master
+        master.title("Durum Test")
+
+        # Arka plan rengi
+        master.configure(bg="#2e2e2e")  # Koyu gri arka plan rengi
+
+        # Stil oluştur
+        style = ttk.Style()
+        style.configure("TFrame", background="#2e2e2e")  # Tüm frame'ler için arka plan rengi
+        style.configure("TLabel", background="#2e2e2e", foreground="white")  # Label'lar için stil
+        style.configure("TButton", background="#4e4e4e", foreground="white")  # Butonlar için stil
+
+        # Pencere boyutlarını ayarla
+        master.geometry("850x800")  # Genişlik x Yükseklik
+
+        # Barların çeşitliliğini artır
+        self.bars = {
+            'Sosyallik': 50,
+            'Yeme & İçme': 50,
+            'Temizlik': 50,
+            'Uyku': 50,
+            'Egzersiz': 50,
+            'Zihin': 50,
+            'Finans': 50,
+            'Eğlence': 50,
+            'Kariyer': 50,
+            'İlişkiler': 50,
+            'Hedefler': 50,
+            'Yaratıcılık': 50,
+            'Seyahat': 50,
+            'Doğa': 50,
+            'Teknoloji': 50,
+            'Gönüllülük': 50,
+            'Ruhsal': 50,
+            'İlgi Alanları': 50,
+            'Zaman Yönetimi': 50,
+            'Hobiler': 50,
+            'Kendine Zaman': 50,
+            'Aile İlişkileri': 50,
+            'Kişisel Gelişim': 50,
+            'Meditasyon': 50,
+            'Müzik': 50,
+            'Spor': 50,
+            'Kitap Okuma': 50,
+            'Sanat': 50
+        }
+
+        self.canvas_items = {}
+        self.value_labels = {}
+        self.emojis = {}
+
+        # Ana çerçeve ve kaydırıcı çerçeve
+        self.main_frame = ttk.Frame(self.master, padding=10)
+        self.main_frame.pack(fill='both', expand=True)
+
+        # Kaydırma çubuğu
+        self.canvas = tk.Canvas(self.main_frame, bg="#4e4e4e")  # Canvas rengi
+        self.scrollbar = ttk.Scrollbar(self.main_frame, orient="vertical", command=self.canvas.yview)
+        self.scrollable_frame = ttk.Frame(self.canvas)  # Arka plan rengi burada ayarlanmaz
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
+
+        self.create_widgets()
+
+    def create_widgets(self):
+        for bar in self.bars:
+            frame = ttk.Frame(self.scrollable_frame)
+            frame.pack(padx=10, pady=5, fill='x')
+
+            label = ttk.Label(frame, text=bar, width=20, anchor='w')
+            label.pack(side='left', padx=(0, 10))
+
+            # Canvas kullanarak bar oluştur
+            canvas = tk.Canvas(frame, width=300, height=30, bg="#4e4e4e", highlightthickness=0)
+            canvas.pack(side='left', fill='x', expand=True)
+
+            # Bar için dikdörtgen oluştur
+            rect_id = canvas.create_rectangle(5, 5, 5, 25, fill="green", outline="", width=0)
+            self.canvas_items[bar] = (canvas, rect_id)
+
+            emoji_label = ttk.Label(frame, text=self.get_emoji(self.bars[bar]), font=("Arial", 14))
+            emoji_label.pack(side='left', padx=(10, 0))
+            self.emojis[bar] = emoji_label
+
+            value_label = ttk.Label(frame, text=str(self.bars[bar]), width=5, anchor='e')
+            value_label.pack(side='left', padx=(10, 0))
+            self.value_labels[bar] = value_label
+
+            # Kaydırıcı
+            scale = ttk.Scale(frame, from_=0, to=100, orient='horizontal',
+                              command=lambda val, b=bar: self.update_bar(b, val))
+            scale.set(self.bars[bar])
+            scale.pack(side='left', fill='x', expand=True, padx=(10, 0))
+
+            # Yukarı ve aşağı butonları ekle
+            up_button = ttk.Button(frame, text="↑", command=lambda b=bar: self.increment_value(b, 5))
+            up_button.pack(side='left', padx=(5, 0))
+
+            down_button = ttk.Button(frame, text="↓", command=lambda b=bar: self.increment_value(b, -5))
+            down_button.pack(side='left', padx=(5, 0))
+
+            self.update_bar(bar, self.bars[bar])  # Başlangıç değerini ayarla
+
+        self.submit_button = ttk.Button(self.scrollable_frame, text="Sonuçlandır", command=self.calculate_average)
+        self.submit_button.pack(pady=10)
+
+        self.reset_button = ttk.Button(self.scrollable_frame, text="Sıfırla", command=self.reset)
+        self.reset_button.pack(pady=10)
+
+    def increment_value(self, bar_name, increment):
+        new_value = max(0, min(100, self.bars[bar_name] + increment))
+        self.update_bar(bar_name, new_value)
+
+    def update_bar(self, bar_name, value):
+        value = int(float(value))
+        self.bars[bar_name] = value
+
+        # Barın dolgusunu güncelle
+        width = (value / 100) * 290  # Canvas genişliği (5px margin)
+        canvas, rect_id = self.canvas_items[bar_name]
+
+        # Dörtgenin koordinatlarını güncelle
+        canvas.coords(rect_id, 5, 5, 5 + width, 25)
+
+        self.value_labels[bar_name].config(text=str(value))  # Değeri güncelle
+        self.emojis[bar_name].config(text=self.get_emoji(value))  # Emoji güncelle
+
+    def get_emoji(self, value):
+        if value > 70:
+            return "😄"  # Gülen emoji
+        elif value >= 40:
+            return "😐"  # Normal bakan emoji
+        else:
+            return "😢"  # Üzgün emoji
+
+    def calculate_average(self):
+        average = sum(self.bars.values()) / len(self.bars)
+        score = (average / 100) * 5
+
+        # 50'nin altında olan barları listele ve tavsiyeler göster
+        incomplete_items = [bar for bar, value in self.bars.items() if value < 50]
+        recommendations = {
+            'Sosyallik': "Sosyal aktivitelerinizi artırın.",
+            'Yeme & İçme': "Daha sağlıklı beslenmeye özen gösterin.",
+            'Temizlik': "Temizlik alışkanlıklarınızı gözden geçirin.",
+            'Uyku': "Düzenli uyku alışkanlıkları geliştirin.",
+            'Egzersiz': "Daha fazla fiziksel aktivite yapın.",
+            'Zihin': "Zihinsel aktiviteleri artırın.",
+            'Finans': "Bütçenizi kontrol edin.",
+            'Eğlence': "Daha fazla eğlenceli aktivite yapın.",
+            'Kariyer': "Kariyer hedeflerinizi gözden geçirin.",
+            'İlişkiler': "İlişkilerinizi güçlendirin.",
+            'Hedefler': "Hedeflerinizi netleştirin.",
+            'Yaratıcılık': "Yaratıcılığınızı geliştirin.",
+            'Seyahat': "Yeni yerler keşfetmek için fırsatlar yaratın.",
+            'Doğa': "Doğa yürüyüşlerine çıkın.",
+            'Teknoloji': "Teknolojiyi verimli kullanın.",
+            'Gönüllülük': "Gönüllü projelere katılın.",
+            'Ruhsal': "Meditasyon veya yoga yapmayı deneyin.",
+            'İlgi Alanları': "Yeni ilgi alanları keşfedin.",
+            'Zaman Yönetimi': "Zaman yönetimi becerilerinizi geliştirin.",
+            'Hobiler': "Yeni hobiler edinin.",
+            'Kendine Zaman': "Kendinize zaman ayırmayı unutmayın.",
+            'Aile İlişkileri': "Aile üyelerinizle daha fazla zaman geçirin.",
+            'Kişisel Gelişim': "Kişisel gelişim kaynaklarına yönelin.",
+            'Meditasyon': "Meditasyon yapmayı deneyin.",
+            'Müzik': "Müzik dinleyerek rahatlayın.",
+            'Spor': "Spor yapmayı alışkanlık haline getirin.",
+            'Kitap Okuma': "Düzenli olarak kitap okuyun.",
+            'Sanat': "Sanat aktivitelerine katılın."
+        }
+
+        if incomplete_items:
+            incomplete_list = "\n".join(incomplete_items)
+            advice = "\n".join([recommendations[item] for item in incomplete_items])
+            # Bilgileri birleştirin
+            full_message = (
+                f"Kötü Durumda Olanlar:\n{incomplete_list}\n\n"
+                f"Tavsiyeler:\n{advice}\n\n"
+                f"Ortalama Puan: {score:.2f}/5"
+            )
+
+            # Tek bir messagebox ile göster
+            messagebox.showinfo("Kontrol Edilmesi Gerekenler ve Puan", full_message)
+        else:
+            messagebox.showinfo("Puan", f"Ortalama Puan: {score:.2f}/5")
+
+    def reset(self):
+        # Tüm barları sıfırla
+        for bar in self.bars:
+            self.update_bar(bar, 50)  # Başlangıç değeri 50 olarak ayarla
+
+
+def main():
+    root = tk.Tk()
+    app = App1(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
+
+
+    #pyinstaller --noconsole --onefile main.py
